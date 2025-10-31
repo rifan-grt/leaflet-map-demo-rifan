@@ -2,8 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Leaflet Map Demo</title>
+  <title>Peta Leaflet dari CSV</title>
 
+  <!-- CSS Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -13,6 +14,9 @@
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     crossorigin=""
   ></script>
+
+  <!-- PapaParse: library untuk baca CSV -->
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
     html, body {
@@ -32,24 +36,24 @@
     // Inisialisasi peta
     var map = L.map('map').setView([-6.2, 106.816666], 11);
 
-    // Layer dasar OpenStreetMap
+    // Tambahkan layer dasar OSM
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Data marker manual
-    var lokasi = [
-      { nama: "Monas", lat: -6.175392, lon: 106.827153 },
-      { nama: "Kota Tua", lat: -6.1352, lon: 106.8133 },
-      { nama: "GBK Senayan", lat: -6.2185, lon: 106.8011 }
-    ];
-
-    // Tambahkan semua marker ke peta
-    lokasi.forEach(function(item) {
-      L.marker([item.lat, item.lon])
-        .addTo(map)
-        .bindPopup(`<b>${item.nama}</b><br>(${item.lat}, ${item.lon})`);
+    // Ambil data dari file CSV
+    Papa.parse('data.csv', {
+      download: true,
+      header: true,
+      complete: function(results) {
+        results.data.forEach(function(row) {
+          if (row.lat && row.lon) {
+            var marker = L.marker([parseFloat(row.lat), parseFloat(row.lon)]).addTo(map);
+            marker.bindPopup(`<b>${row.nama}</b><br>${row.keterangan || ''}`);
+          }
+        });
+      }
     });
   </script>
 </body>
