@@ -2,15 +2,17 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Leaflet Map on GitHub Pages</title>
+  <title>Leaflet Map Demo</title>
 
-  <!-- CSS Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-VzP+RlZV2zFyyBLTt+ka7Kf2BCmltKYDHfH0zZ6Lz7E="
     crossorigin=""
   />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
 
   <style>
     html, body {
@@ -26,28 +28,29 @@
 <body>
   <div id="map"></div>
 
-  <!-- JS Leaflet -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1j8Mk8gHn6+fT5m9rS5KJ3UAZn7Zj+vQ3x04ePjg="
-    crossorigin=""
-  ></script>
-
   <script>
     // Inisialisasi peta
-    var map = L.map('map').setView([-6.200000, 106.816666], 11); // Jakarta
+    var map = L.map('map').setView([-6.2, 106.816666], 11);
 
-    // Tambahkan layer tile dari OpenStreetMap
+    // Layer dasar OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Tambahkan marker
-    L.marker([-6.2, 106.816666])
-      .addTo(map)
-      .bindPopup('<b>Halo!</b><br>Ini Jakarta.')
-      .openPopup();
+    // Data marker manual
+    var lokasi = [
+      { nama: "Monas", lat: -6.175392, lon: 106.827153 },
+      { nama: "Kota Tua", lat: -6.1352, lon: 106.8133 },
+      { nama: "GBK Senayan", lat: -6.2185, lon: 106.8011 }
+    ];
+
+    // Tambahkan semua marker ke peta
+    lokasi.forEach(function(item) {
+      L.marker([item.lat, item.lon])
+        .addTo(map)
+        .bindPopup(`<b>${item.nama}</b><br>(${item.lat}, ${item.lon})`);
+    });
   </script>
 </body>
 </html>
