@@ -2,93 +2,133 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Peta Leaflet + CSV + Search</title>
+  <title>Peta Leaflet + Search CSV</title>
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  ></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- PapaParse (baca CSV) -->
+  <!-- PapaParse -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <!-- Leaflet Control Geocoder -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
-  />
-  <script
-    src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"
-  ></script>
-
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
+    html, body { height: 100%; margin: 0; }
+    #map { width: 100%; height: 100%; }
+    #searchBox {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    #map {
-      width: 100%;
-      height: 100%;
+    #searchBox input {
+      padding: 5px;
+      width: 250px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
-    .leaflet-control-geocoder-form input {
-      width: 200px;
+    #searchResults {
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      margin-top: 5px;
+      display: none;
+      border-radius: 4px;
+    }
+    #searchResults div {
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    #searchResults div:hover {
+      background: #f0f0f0;
     }
   </style>
 </head>
 <body>
+  <div id="searchBox">
+    <input type="text" id="searchInput" placeholder="Cari lokasi (berdasarkan CSV)..." />
+    <div id="searchResults"></div>
+  </div>
   <div id="map"></div>
 
   <script>
-    // Inisialisasi peta
+    // Inisialisasi peta Indonesia
     var map = L.map('map').setView([-2.5, 118], 5);
 
-    // Tambahkan layer dasar OpenStreetMap
+    // Layer dasar
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // --- 1️⃣ Ambil data marker dari CSV ---
+    // Variabel penampung marker dan data CSV
+    var markerList = [];
+    var lokasiData = [];
+
+    // Baca file CSV
     Papa.parse('data.csv', {
       download: true,
       header: true,
       complete: function(results) {
-        results.data.forEach(function(row) {
+        lokasiData = results.data;
+        lokasiData.forEach(function(row) {
           if (row.lat && row.lon) {
-            var marker = L.marker([parseFloat(row.lat), parseFloat(row.lon)]).addTo(map);
-            marker.bindPopup(`<b>${row.nama}</b><br>${row.keterangan || ''}`);
+            var m = L.marker([parseFloat(row.lat), parseFloat(row.lon)])
+              .addTo(map)
+              .bindPopup(`<b>${row.nama}</b><br>${row.keterangan || ''}`);
+            markerList.push({ marker: m, data: row });
           }
         });
       }
     });
 
-    // --- 2️⃣ Tambah Search Box (Leaflet Control Geocoder) ---
-    var geocoder = L.Control.geocoder({
-      defaultMarkGeocode: false
-    })
-    .on('markgeocode', function(e) {
-      var latlng = e.geocode.center;
+    // --- Fitur search berdasarkan CSV ---
+    const input = document.getElementById('searchInput');
+    const resultsBox = document.getElementById('searchResults');
 
-      // Hapus marker lama kalau ada
-      if (window.userMarker) {
-        map.removeLayer(window.userMarker);
+    input.addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      resultsBox.innerHTML = '';
+      if (query.length < 1) {
+        resultsBox.style.display = 'none';
+        return;
       }
 
-      // Tambahkan marker baru dari hasil pencarian
-      window.userMarker = L.marker(latlng).addTo(map)
-        .bindPopup(`<b>${e.geocode.name}</b><br>Lat: ${latlng.lat.toFixed(5)}, Lon: ${latlng.lng.toFixed(5)}`)
-        .openPopup();
+      const matches = lokasiData.filter(item =>
+        item.nama && item.nama.toLowerCase().includes(query)
+      );
 
-      map.setView(latlng, 15);
-    })
-    .addTo(map);
+      if (matches.length === 0) {
+        resultsBox.style.display = 'none';
+        return;
+      }
 
-    // --- 3️⃣ Klik di peta untuk menaruh marker secara manual ---
+      matches.forEach(match => {
+        const div = document.createElement('div');
+        div.textContent = match.nama;
+        div.onclick = () => {
+          const lat = parseFloat(match.lat);
+          const lon = parseFloat(match.lon);
+          map.setView([lat, lon], 15);
+          L.popup()
+            .setLatLng([lat, lon])
+            .setContent(`<b>${match.nama}</b><br>${match.keterangan || ''}`)
+            .openOn(map);
+          resultsBox.style.display = 'none';
+          input.value = match.nama;
+        };
+        resultsBox.appendChild(div);
+      });
+
+      resultsBox.style.display = 'block';
+    });
+
+    // Klik di peta untuk buat marker baru
     map.on('click', function(e) {
       if (window.userMarker) {
         map.removeLayer(window.userMarker);
