@@ -2,30 +2,41 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Peta Leaflet dari CSV</title>
+  <title>Peta Leaflet + CSV + Search</title>
 
-  <!-- CSS Leaflet -->
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
   />
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin=""
   ></script>
 
-  <!-- PapaParse: library untuk baca CSV -->
+  <!-- PapaParse (baca CSV) -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- Leaflet Control Geocoder -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+  />
+  <script
+    src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"
+  ></script>
 
   <style>
     html, body {
       height: 100%;
       margin: 0;
+      padding: 0;
     }
     #map {
       width: 100%;
       height: 100%;
+    }
+    .leaflet-control-geocoder-form input {
+      width: 200px;
     }
   </style>
 </head>
@@ -36,13 +47,13 @@
     // Inisialisasi peta
     var map = L.map('map').setView([-6.2, 106.816666], 11);
 
-    // Tambahkan layer dasar OSM
+    // Tambahkan layer dasar OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Ambil data dari file CSV
+    // --- 1️⃣ Ambil data marker dari CSV ---
     Papa.parse('data.csv', {
       download: true,
       header: true,
@@ -54,6 +65,37 @@
           }
         });
       }
+    });
+
+    // --- 2️⃣ Tambah Search Box (Leaflet Control Geocoder) ---
+    var geocoder = L.Control.geocoder({
+      defaultMarkGeocode: false
+    })
+    .on('markgeocode', function(e) {
+      var latlng = e.geocode.center;
+
+      // Hapus marker lama kalau ada
+      if (window.userMarker) {
+        map.removeLayer(window.userMarker);
+      }
+
+      // Tambahkan marker baru dari hasil pencarian
+      window.userMarker = L.marker(latlng).addTo(map)
+        .bindPopup(`<b>${e.geocode.name}</b><br>Lat: ${latlng.lat.toFixed(5)}, Lon: ${latlng.lng.toFixed(5)}`)
+        .openPopup();
+
+      map.setView(latlng, 15);
+    })
+    .addTo(map);
+
+    // --- 3️⃣ Klik di peta untuk menaruh marker secara manual ---
+    map.on('click', function(e) {
+      if (window.userMarker) {
+        map.removeLayer(window.userMarker);
+      }
+      window.userMarker = L.marker(e.latlng).addTo(map)
+        .bindPopup(`<b>Posisi baru</b><br>Lat: ${e.latlng.lat.toFixed(5)}, Lon: ${e.latlng.lng.toFixed(5)}`)
+        .openPopup();
     });
   </script>
 </body>
