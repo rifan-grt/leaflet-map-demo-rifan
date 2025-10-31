@@ -129,14 +129,14 @@
     });
 
     // Klik di peta untuk buat marker baru
-    map.on('click', function(e) {
-      if (window.userMarker) {
-        map.removeLayer(window.userMarker);
-      }
-      window.userMarker = L.marker(e.latlng).addTo(map)
-        .bindPopup(`<b>Posisi baru</b><br>Lat: ${e.latlng.lat.toFixed(5)}, Lon: ${e.latlng.lng.toFixed(5)}`)
-        .openPopup();
-    });
+  //  map.on('click', function(e) {
+   //   if (window.userMarker) {
+    //    map.removeLayer(window.userMarker);
+     // }
+     // window.userMarker = L.marker(e.latlng).addTo(map)
+      //  .bindPopup(`<b>Posisi baru</b><br>Lat: ${e.latlng.lat.toFixed(5)}, Lon: ${e.latlng.lng.toFixed(5)}`)
+       // .openPopup();
+    //});
   </script>
 </body>
 </html>
